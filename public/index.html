@@ -1,0 +1,942 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>queue_q</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎫</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+  // ============================================================
+  //  CONFIGURATION — paste your Supabase project values here
+  //  (Supabase → Connect, or Project Settings → API Keys)
+  //  Use the PUBLISHABLE key (starts with sb_publishable_).
+  //  Never put the secret key here.
+  // ============================================================
+  const SUPABASE_URL = 'https://pazqbhtskxnvqhyaznoi.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_jRwXImHm_whZTUCgzKiXPQ_kzJ28cdY';
+  const CLINIC_NAME = 'queue_q';
+</script>
+<style>
+:root {
+  --bg: #EEF3F1;
+  --surface: #FFFFFF;
+  --ink: #142B27;
+  --muted: #566B66;
+  --line: #CFDBD7;
+  --brand: #0E6B54;
+  --brand-ink: #FFFFFF;
+  --brand-soft: #DCEFE8;
+  --hold: #9A5B00;
+  --hold-soft: #FBEFD9;
+  --danger: #B3261E;
+  --danger-soft: #FBE4E2;
+  --stub: #F7FAF9;
+  --shadow: 0 1px 2px rgba(20, 43, 39, .08), 0 8px 24px rgba(20, 43, 39, .06);
+  color-scheme: light;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0E1917;
+    --surface: #16241F;
+    --ink: #E3EEEA;
+    --muted: #93AAA3;
+    --line: #2A3D38;
+    --brand: #3CC495;
+    --brand-ink: #062118;
+    --brand-soft: #173A2F;
+    --hold: #F2B356;
+    --hold-soft: #3A2C14;
+    --danger: #FF8A80;
+    --danger-soft: #3D1D1A;
+    --stub: #1B2C27;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4);
+    color-scheme: dark;
+  }
+}
+*, *::before, *::after { box-sizing: inherit; }
+html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 17px/1.5 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3 { line-height: 1.2; margin: 0; }
+h1 { font-size: 1.6rem; }
+h2 { font-size: 1.25rem; }
+h3 { font-size: 1.05rem; }
+p { margin: 0; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
+a { color: var(--brand); }
+
+.wrap { max-width: 34rem; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
+.wrap.wide { max-width: 72rem; }
+.top { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; }
+.clinic { color: var(--muted); font-size: .95rem; }
+.muted { color: var(--muted); }
+.small { font-size: .9rem; }
+.stack > * + * { margin-top: 1rem; }
+.row { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+.spacer { flex: 1; }
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 1.1rem;
+}
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
+  min-height: 2.75rem; padding: .55rem 1rem;
+  border-radius: 10px; border: 1px solid var(--line);
+  background: var(--surface); cursor: pointer; font-weight: 700;
+  text-decoration: none;
+}
+.btn:hover { border-color: var(--muted); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.primary { background: var(--brand); color: var(--brand-ink); border-color: var(--brand); }
+.btn.big { min-height: 3.5rem; font-size: 1.15rem; width: 100%; }
+.btn.danger { color: var(--danger); }
+.btn.quiet { border-color: transparent; background: transparent; color: var(--muted); font-weight: 400; text-decoration: underline; padding-inline: .25rem; min-height: 2.25rem; justify-content: flex-start; text-align: left; }
+.btn.small { min-height: 2.25rem; padding: .3rem .7rem; font-size: .9rem; }
+
+label { display: block; font-weight: 700; margin-bottom: .3rem; }
+.field + .field { margin-top: .9rem; }
+input[type=text], input[type=tel], input[type=password], input[type=number], select {
+  width: 100%; min-height: 2.9rem; padding: .5rem .75rem;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--surface);
+}
+.hint { font-size: .88rem; color: var(--muted); margin-top: .25rem; }
+.error { background: var(--danger-soft); color: var(--danger); border-radius: 10px; padding: .7rem .9rem; }
+.notice { background: var(--hold-soft); color: var(--hold); border-radius: 10px; padding: .7rem .9rem; }
+
+/* ---------- The ticket: the one bold element ---------- */
+.ticket {
+  position: relative;
+  background: var(--surface);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  display: grid;
+  grid-template-columns: 7.5rem 1fr;
+  overflow: hidden;
+  /* notches where the stub tears off */
+  -webkit-mask: radial-gradient(circle 11px at 7.5rem 0, transparent 98%, #000) top / 100% 51% no-repeat,
+                radial-gradient(circle 11px at 7.5rem 100%, transparent 98%, #000) bottom / 100% 51% no-repeat;
+          mask: radial-gradient(circle 11px at 7.5rem 0, transparent 98%, #000) top / 100% 51% no-repeat,
+                radial-gradient(circle 11px at 7.5rem 100%, transparent 98%, #000) bottom / 100% 51% no-repeat;
+}
+.ticket + .ticket { margin-top: 1rem; }
+.stub {
+  background: var(--stub);
+  border-right: 2px dashed var(--line);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 1rem .5rem; text-align: center;
+}
+.stub .no {
+  font-size: 2.35rem; font-weight: 700; letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums; line-height: 1;
+}
+.stub .lbl { font-size: .8rem; color: var(--muted); margin-top: .35rem; }
+.ticket-body { padding: 1rem 1.1rem; min-width: 0; }
+.ticket-body h2 { font-size: 1.15rem; }
+.ticket .wait { font-size: 1.5rem; font-weight: 700; margin-top: .5rem; line-height: 1.2; }
+.ticket .meta { color: var(--muted); font-size: .92rem; margin-top: .2rem; }
+.ticket .actions { margin-top: .6rem; display: flex; flex-wrap: wrap; gap: .25rem .75rem; }
+
+.ticket.serving .stub { background: var(--brand); color: var(--brand-ink); border-right-color: transparent; }
+.ticket.serving .stub .lbl { color: inherit; opacity: .85; }
+.ticket.serving .wait { color: var(--brand); }
+.ticket.on_hold .stub { background: var(--hold-soft); color: var(--hold); }
+.ticket.on_hold .wait { color: var(--hold); font-size: 1.15rem; }
+.ticket.finished { box-shadow: none; border: 1px solid var(--line); opacity: .75; }
+.ticket.finished .stub .no { font-size: 1.6rem; }
+
+.alerts-bar { display: flex; gap: .75rem; align-items: center; margin-bottom: 1.1rem; }
+
+/* Turn overlay */
+.overlay {
+  position: fixed; inset: 0; z-index: 50;
+  background: var(--brand); color: var(--brand-ink);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: 2rem 1.5rem calc(2rem + env(safe-area-inset-bottom, 0px));
+}
+.overlay .no { font-size: clamp(4rem, 22vw, 8rem); font-weight: 700; line-height: 1; letter-spacing: -.03em; margin: .5rem 0 1rem; }
+.overlay p { font-size: 1.35rem; max-width: 22rem; }
+.overlay .btn { margin-top: 2rem; background: var(--brand-ink); color: var(--brand); border: 0; min-width: 12rem; }
+@media (prefers-reduced-motion: no-preference) {
+  .overlay .no { animation: pulse 1.2s ease-in-out 3; }
+  @keyframes pulse { 50% { transform: scale(1.08); } }
+}
+
+/* ---------- Host page ---------- */
+.host-grid { display: grid; gap: 1rem; grid-template-columns: 1fr; }
+@media (min-width: 860px) { .host-grid { grid-template-columns: 22rem 1fr; align-items: start; } }
+.serving-card .no { font-size: 3.5rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.serving-card .who { font-size: 1.2rem; font-weight: 700; margin-top: .4rem; }
+.timer { font-variant-numeric: tabular-nums; }
+.timer.over { color: var(--hold); font-weight: 700; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.seg button { border: 0; background: var(--surface); padding: .5rem .9rem; cursor: pointer; min-height: 2.5rem; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed=true] { background: var(--brand); color: var(--brand-ink); font-weight: 700; }
+.status-pill { display: inline-block; padding: .15rem .6rem; border-radius: 999px; font-size: .85rem; font-weight: 700; }
+.status-pill.open { background: var(--brand-soft); color: var(--brand); }
+.status-pill.paused { background: var(--hold-soft); color: var(--hold); }
+.status-pill.closed { background: var(--danger-soft); color: var(--danger); }
+
+.qlist { list-style: none; margin: 0; padding: 0; }
+.qitem {
+  display: grid; grid-template-columns: 2rem 4.2rem 1fr auto; gap: .35rem .75rem; align-items: center;
+  padding: .7rem 0; border-top: 1px solid var(--line);
+}
+.qitem:first-child { border-top: 0; }
+.qitem .pos { color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
+.qitem .tk { font-weight: 700; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.qitem .nm { min-width: 0; }
+.qitem .nm strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qitem .acts { display: flex; gap: .4rem; flex-wrap: wrap; justify-content: flex-end; }
+.est-btn { border: 1px dashed var(--line); background: transparent; border-radius: 8px; padding: .1rem .45rem; cursor: pointer; font-size: .88rem; }
+.est-btn.custom { border-style: solid; border-color: var(--brand); color: var(--brand); font-weight: 700; }
+.badge-hold { display: inline-block; background: var(--hold-soft); color: var(--hold); border-radius: 6px; padding: 0 .4rem; font-size: .85rem; font-weight: 700; }
+@media (max-width: 520px) {
+  .qitem { grid-template-columns: 1.6rem 3.8rem 1fr; }
+  .qitem .acts { grid-column: 2 / -1; justify-content: flex-start; }
+}
+.stats { display: flex; gap: 1.5rem; }
+.stats b { display: block; font-size: 1.5rem; }
+
+/* ---------- Admin ---------- */
+.room-admin { display: grid; gap: 1rem; grid-template-columns: 1fr; align-items: start; }
+@media (min-width: 760px) { .room-admin { grid-template-columns: 1fr 1fr; } }
+.qr-box { background: #fff; padding: .75rem; border-radius: 10px; display: inline-block; }
+.qr-box img, .qr-box canvas { display: block; }
+.linkline { font-size: .85rem; word-break: break-all; color: var(--muted); }
+.form-grid { display: grid; gap: .9rem; grid-template-columns: 1fr 1fr; }
+.form-grid .full { grid-column: 1 / -1; }
+
+#print-area { display: none; }
+@media print {
+  body > *:not(#print-area) { display: none !important; }
+  #print-area { display: block; text-align: center; color: #000; padding-top: 2cm; }
+  #print-area h1 { font-size: 34pt; }
+  #print-area p { font-size: 18pt; margin: .4cm 0 1cm; }
+  #print-area .qr-box { padding: 0; }
+}
+.toast {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  background: var(--ink); color: var(--bg); padding: .65rem 1rem; border-radius: 10px;
+  z-index: 60; max-width: calc(100% - 2rem);
+}
+</style>
+</head>
+<body>
+<main id="app" class="wrap"><p class="muted">Loading…</p></main>
+<div id="print-area"></div>
+
+<script>
+'use strict';
+// =================================================================
+//  Basics
+// =================================================================
+const app = document.getElementById('app');
+const params = new URLSearchParams(location.search);
+const configured = !SUPABASE_URL.includes('YOUR-PROJECT') && !SUPABASE_KEY.includes('YOUR-KEY');
+const sb = configured ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+const BASE_URL = location.origin + location.pathname;
+
+const ERRORS = {
+  invalid_qr: 'This QR code is no longer valid. Please scan the QR code posted at the room.',
+  room_not_found: 'This room could not be found. Please scan the QR code posted at the room.',
+  room_closed: 'This room is closed and not taking new patients right now.',
+  name_required: 'Please enter your name.',
+  unknown_patient: 'Your queue details were not found on this phone.',
+  cannot_leave: 'You can only leave a queue while you are still waiting.',
+  cannot_postpone: 'You can only move back while you are still waiting.',
+  already_last: 'There is nobody behind you to swap with.',
+  bad_pin: 'That PIN is not correct.',
+  locked: 'Too many wrong PINs. This room is locked for 5 minutes.',
+  no_room: 'This room could not be found.',
+  not_waiting: 'That patient is no longer waiting.',
+  patient_busy: 'That patient is being treated in another room right now.',
+  cannot_skip: 'That patient cannot be marked as a no-show.',
+  not_skipped: 'That patient is not in the no-show list.',
+  already_in_queue: 'That patient has already rejoined this queue.',
+  invalid_minutes: 'Minutes must be between 1 and 240.',
+  invalid_status: 'Unknown room status.',
+  bad_password: 'That admin password is not correct.',
+  invalid_prefix: 'The ticket letter must be 1–3 letters or numbers.',
+  invalid_pin: 'The PIN must be 4 to 8 digits.',
+  pin_required: 'Please set a host PIN for the new room.',
+};
+class AppError extends Error { constructor(code) { super(ERRORS[code] || code); this.code = code; } }
+
+async function rpc(fn, args) {
+  const { data, error } = await sb.rpc(fn, args);
+  if (error) throw new Error('Could not reach the server. Check your connection and try again.');
+  if (data && data.ok === false) throw new AppError(data.error);
+  return data;
+}
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const store = {
+  get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+  del(k) { try { localStorage.removeItem(k); } catch {} },
+};
+
+function fmtWait(min) {
+  if (min == null) return '';
+  if (min <= 1) return 'any moment now';
+  if (min < 60) return `about ${min} min`;
+  const h = Math.floor(min / 60), m = min % 60;
+  return `about ${h} h${m ? ` ${m} min` : ''}`;
+}
+function fmtClock(sec) {
+  sec = Math.max(0, Math.floor(sec));
+  return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+}
+function toast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3200);
+}
+
+// Live refresh: listen for room changes, plus a slow poll as a safety net
+let refreshFn = null, refreshTimer = null;
+function onLive(fn) {
+  refreshFn = fn;
+  sb.channel('rooms-live')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, () => {
+      clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => refreshFn && refreshFn(), 250);
+    })
+    .subscribe();
+  setInterval(() => refreshFn && refreshFn(), 20000);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && refreshFn) refreshFn();
+  });
+}
+
+// =================================================================
+//  Alerts (sound, vibration, notification)
+// =================================================================
+let audioCtx = null, wakeLock = null;
+async function enableAlerts() {
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    await audioCtx.resume();
+  } catch {}
+  if ('Notification' in window && Notification.permission === 'default') {
+    try { await Notification.requestPermission(); } catch {}
+  }
+  keepAwake();
+  store.set('cq_alerts', true);
+  chime(1);
+}
+async function keepAwake() {
+  try { if ('wakeLock' in navigator && !wakeLock) wakeLock = await navigator.wakeLock.request('screen'); wakeLock?.addEventListener('release', () => { wakeLock = null; }); } catch {}
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && store.get('cq_alerts')) keepAwake(); });
+
+function chime(times = 3) {
+  if (!audioCtx) return;
+  const notes = [880, 1175, 1568];
+  let t = audioCtx.currentTime + 0.05;
+  for (let r = 0; r < times; r++) {
+    notes.forEach(f => {
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.35, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+      o.connect(g).connect(audioCtx.destination);
+      o.start(t); o.stop(t + 0.4);
+      t += 0.18;
+    });
+    t += 0.5;
+  }
+}
+function notify(title, body) {
+  try { navigator.vibrate?.([400, 200, 400, 200, 600]); } catch {}
+  if ('Notification' in window && Notification.permission === 'granted' && document.visibilityState !== 'visible') {
+    try { new Notification(title, { body, tag: 'clinic-queue', renotify: true }); } catch {}
+  }
+}
+
+// =================================================================
+//  Patient: join page (after scanning a room QR code)
+// =================================================================
+async function pageJoin() {
+  const roomId = params.get('room'), token = params.get('t') || '';
+  const me = store.get('cq_patient');
+  let info;
+  try { info = await rpc('room_info', { p_room: roomId, p_token: token }); }
+  catch (e) {
+    app.innerHTML = `<div class="top"><span class="clinic">${esc(CLINIC_NAME)}</span></div>
+      <div class="error">${esc(e.message)}</div>
+      ${me ? `<p style="margin-top:1rem"><a class="btn" href="${esc(BASE_URL)}">See my queues</a></p>` : ''}`;
+    return;
+  }
+  const r = info.room;
+  const closed = r.status === 'closed';
+  app.innerHTML = `
+    <div class="top"><span class="clinic">${esc(CLINIC_NAME)}</span></div>
+    <div class="stack">
+      <div>
+        <h1>${esc(r.name)}</h1>
+        ${r.doctor_name ? `<p class="muted">${esc(r.doctor_name)}</p>` : ''}
+      </div>
+      ${r.status !== 'open' ? `<div class="${closed ? 'error' : 'notice'}">${closed ? 'This room is closed.' : 'This room is on a short break.'} ${esc(r.status_message || '')}</div>` : ''}
+      <div class="panel">
+        <p>${info.waiting === 0 ? 'Nobody is waiting.' : `${info.waiting} ${info.waiting === 1 ? 'person' : 'people'} waiting.`}
+           ${info.now_serving ? `Now serving ${esc(info.now_serving)}.` : ''}</p>
+        <p style="font-size:1.35rem;font-weight:700;margin-top:.25rem">Wait if you join now: ${info.est_wait <= 1 ? 'very short' : esc(fmtWait(info.est_wait))}</p>
+      </div>
+      ${closed ? '' : `
+      <form id="join" class="panel" novalidate>
+        ${me ? `
+          <p>Joining as <strong>${esc(me.name)}</strong>.
+             <button type="button" class="btn quiet" id="notme">Not you?</button></p>
+        ` : `
+          <div class="field"><label for="nm">Your name</label>
+            <input id="nm" type="text" autocomplete="name" maxlength="60" required></div>
+          <div class="field"><label for="ph">Phone number <span class="muted small">(optional)</span></label>
+            <input id="ph" type="tel" autocomplete="tel" maxlength="20" inputmode="tel">
+            <p class="hint">So the clinic can reach you if you step away.</p></div>
+        `}
+        <div id="err" class="error" hidden style="margin-top:1rem"></div>
+        <button class="btn primary big" style="margin-top:1rem">Join the queue</button>
+      </form>`}
+      ${me ? `<p><a href="${esc(BASE_URL)}">See my queues</a></p>` : ''}
+    </div>`;
+
+  document.getElementById('notme')?.addEventListener('click', () => {
+    if (confirm('Use this phone as a new patient? Your current queues will no longer show on this phone.')) {
+      store.del('cq_patient'); pageJoin();
+    }
+  });
+  document.getElementById('join')?.addEventListener('submit', async ev => {
+    ev.preventDefault();
+    const btn = ev.target.querySelector('button.primary'), err = document.getElementById('err');
+    const name = document.getElementById('nm')?.value.trim();
+    if (!me && !name) { err.textContent = ERRORS.name_required; err.hidden = false; return; }
+    btn.disabled = true; err.hidden = true;
+    try {
+      const res = await rpc('join_queue', {
+        p_room: roomId, p_token: token,
+        p_patient_id: me?.id ?? null, p_patient_key: me?.key ?? null,
+        p_name: name || null, p_phone: document.getElementById('ph')?.value.trim() || null,
+      });
+      store.set('cq_patient', { id: res.patient_id, key: res.patient_key, name: name || me?.name });
+      history.replaceState(null, '', BASE_URL);
+      toast(res.already ? `You are already in this queue: ${res.ticket}` : `You joined. Your number is ${res.ticket}`);
+      pageMyQueues();
+    } catch (e) {
+      if (e.code === 'unknown_patient') store.del('cq_patient');
+      err.textContent = e.message; err.hidden = false; btn.disabled = false;
+    }
+  });
+}
+
+// =================================================================
+//  Patient: my queues
+// =================================================================
+let showingOverlay = false;
+async function pageMyQueues() {
+  const me = store.get('cq_patient');
+  if (!me) {
+    app.innerHTML = `
+      <div class="top"><span class="clinic">${esc(CLINIC_NAME)}</span></div>
+      <h1>Scan a room’s QR code to join its queue</h1>
+      <p class="muted" style="margin-top:.75rem">Each room has its own QR code posted near the door. You can join more than one room’s queue.</p>`;
+    return;
+  }
+  const render = async () => {
+    let data;
+    try { data = await rpc('my_queues', { p_patient_id: me.id, p_patient_key: me.key }); }
+    catch (e) {
+      if (e.code === 'unknown_patient') { store.del('cq_patient'); return pageMyQueues(); }
+      if (!app.querySelector('.ticket')) app.innerHTML = `<div class="error">${esc(e.message)}</div>`;
+      return;
+    }
+    drawMyQueues(me, data);
+    checkAlerts(data.queues);
+  };
+  await render();
+  onLive(render);
+}
+
+function drawMyQueues(me, data) {
+  const active = data.queues.filter(q => ['waiting', 'serving', 'on_hold'].includes(q.status))
+    .sort((a, b) => (b.status === 'serving') - (a.status === 'serving'));
+  const finished = data.queues.filter(q => !['waiting', 'serving', 'on_hold'].includes(q.status));
+  const alertsOn = store.get('cq_alerts') && audioCtx;
+
+  const card = q => {
+    let main = '', meta = '';
+    if (q.status === 'serving') {
+      main = `Please go to ${esc(q.room_name)} now`;
+      meta = q.doctor_name ? esc(q.doctor_name) : 'It’s your turn.';
+    } else if (q.status === 'on_hold') {
+      main = `Your place is kept while you’re in ${esc(q.busy_in || 'another room')}`;
+      meta = `${q.ahead === 0 ? 'Nobody' : q.ahead} ahead of you. Now serving ${esc(q.now_serving || '—')}.`;
+    } else {
+      main = q.ahead === 0 ? (q.now_serving ? 'You’re next' : 'You’re first in line') : `Wait ${esc(fmtWait(q.est_wait))}`;
+      meta = `${q.ahead === 0 ? 'Nobody' : q.ahead} ahead of you. Now serving ${esc(q.now_serving || '—')}.`;
+    }
+    const roomNote = q.room_status !== 'open'
+      ? `<p class="meta" style="color:var(--hold)">${q.room_status === 'paused' ? 'Room on a short break.' : 'Room closed.'} ${esc(q.room_message || '')}</p>` : '';
+    return `
+      <article class="ticket ${q.status}" aria-label="Ticket ${esc(q.ticket)} for ${esc(q.room_name)}">
+        <div class="stub"><span class="no">${esc(q.ticket)}</span><span class="lbl">Your number</span></div>
+        <div class="ticket-body">
+          <h2>${esc(q.room_name)}</h2>
+          <p class="wait">${main}</p>
+          <p class="meta">${meta}</p>
+          ${roomNote}
+          ${q.status !== 'serving' ? `<div class="actions">
+            ${q.can_postpone ? `<button class="btn quiet" data-postpone="${q.id}">Let the next person go first</button>` : ''}
+            <button class="btn quiet" data-leave="${q.id}" data-room="${esc(q.room_name)}">Leave this queue</button>
+          </div>` : ''}
+        </div>
+      </article>`;
+  };
+  const doneLabel = { done: 'Finished', skipped: 'Missed your turn', left: 'You left' };
+
+  app.innerHTML = `
+    <div class="top"><span class="clinic">${esc(CLINIC_NAME)}</span><span class="muted small">${esc(data.name)}</span></div>
+    ${active.length ? `
+      <div class="alerts-bar">
+        ${alertsOn
+          ? `<p class="muted small">Alerts are on. Keep this page open; we’ll ring when it’s your turn.</p>`
+          : `<button class="btn primary" id="alerts">Turn on sound alerts</button>
+             <p class="muted small">So your phone rings when it’s your turn.</p>`}
+      </div>
+      <div>${active.map(card).join('')}</div>
+      <p class="muted small" style="margin-top:1rem">Need another room too? Scan that room’s QR code. Waiting times are estimates.</p>
+    ` : `
+      <h1>You’re not in any queue</h1>
+      <p class="muted" style="margin-top:.5rem">Scan the QR code at a room to join its queue.</p>`}
+    ${finished.length ? `
+      <h3 style="margin:2rem 0 .75rem" class="muted">Earlier today</h3>
+      ${finished.map(q => `
+        <article class="ticket finished">
+          <div class="stub"><span class="no">${esc(q.ticket)}</span></div>
+          <div class="ticket-body"><h2>${esc(q.room_name)}</h2><p class="meta">${doneLabel[q.status]}</p></div>
+        </article>`).join('')}` : ''}
+    <p style="margin-top:2rem"><button class="btn quiet" id="forget">Use this phone for another patient</button></p>`;
+
+  document.getElementById('alerts')?.addEventListener('click', async () => { await enableAlerts(); drawMyQueues(me, data); });
+  document.getElementById('forget').addEventListener('click', () => {
+    if (confirm('Remove your queue details from this phone? You will no longer see your tickets here.')) {
+      store.del('cq_patient'); store.del('cq_seen'); location.href = BASE_URL;
+    }
+  });
+  app.querySelectorAll('[data-leave]').forEach(b => b.addEventListener('click', async () => {
+    if (!confirm(`Leave the queue for ${b.dataset.room}? You will lose your place.`)) return;
+    try { await rpc('patient_leave', { p_patient_id: me.id, p_patient_key: me.key, p_entry: b.dataset.leave }); toast('You left the queue.'); refreshFn?.(); }
+    catch (e) { toast(e.message); }
+  }));
+  app.querySelectorAll('[data-postpone]').forEach(b => b.addEventListener('click', async () => {
+    if (!confirm('Swap places with the person behind you?')) return;
+    try { await rpc('patient_postpone', { p_patient_id: me.id, p_patient_key: me.key, p_entry: b.dataset.postpone }); toast('You moved back one place.'); refreshFn?.(); }
+    catch (e) { toast(e.message); }
+  }));
+}
+
+function checkAlerts(queues) {
+  const seen = store.get('cq_seen') || {};
+  let turn = null, near = null;
+  for (const q of queues) {
+    const s = seen[q.id] || { calls: 0, near: false };
+    if (q.status === 'serving' && q.call_count > s.calls) { turn = q; s.calls = q.call_count; }
+    if (q.status === 'waiting' && q.ahead === 0 && q.now_serving && !s.near) { near = q; s.near = true; }
+    seen[q.id] = s;
+  }
+  store.set('cq_seen', seen);
+  if (turn) {
+    chime(3); notify(`It’s your turn: ${turn.ticket}`, `Please go to ${turn.room_name} now.`);
+    showTurnOverlay(turn);
+  } else if (near) {
+    chime(1); notify(`You’re next: ${near.ticket}`, `${near.room_name} will call you soon.`);
+    toast(`You’re next in ${near.room_name}. Please stay nearby.`);
+  }
+}
+function showTurnOverlay(q) {
+  if (showingOverlay) document.querySelector('.overlay')?.remove();
+  showingOverlay = true;
+  const o = document.createElement('div');
+  o.className = 'overlay'; o.setAttribute('role', 'alertdialog'); o.setAttribute('aria-label', 'It’s your turn');
+  o.innerHTML = `<h1>It’s your turn</h1><div class="no">${esc(q.ticket)}</div>
+    <p>Please go to <strong>${esc(q.room_name)}</strong> now.</p>
+    <button class="btn big">I’m on my way</button>`;
+  document.body.appendChild(o);
+  const btn = o.querySelector('button'); btn.focus();
+  btn.addEventListener('click', () => { o.remove(); showingOverlay = false; });
+}
+
+// =================================================================
+//  Host page (one per room, protected by PIN)
+// =================================================================
+let hostTick = null;
+async function pageHost() {
+  const roomId = params.get('host');
+  const pinKey = `cq_pin_${roomId}`;
+  let pin = store.get(pinKey);
+  let view = null, settingsDrawn = false;
+
+  const askPin = msg => {
+    app.className = 'wrap';
+    app.innerHTML = `
+      <div class="top"><span class="clinic">${esc(CLINIC_NAME)}</span><span class="muted small">Room host</span></div>
+      <form id="pinf" class="panel stack" novalidate>
+        <h1>Enter the room PIN</h1>
+        ${msg ? `<div class="error">${esc(msg)}</div>` : ''}
+        <div><label for="pin">PIN</label><input id="pin" type="password" inputmode="numeric" autocomplete="off" maxlength="8"></div>
+        <button class="btn primary big">Open host page</button>
+        <p class="hint">This device will remember the PIN.</p>
+      </form>`;
+    document.getElementById('pin').focus();
+    document.getElementById('pinf').addEventListener('submit', async e => {
+      e.preventDefault(); pin = document.getElementById('pin').value.trim(); load(true);
+    });
+  };
+
+  const call = async (fn, extra = {}) => {
+    try {
+      const res = await rpc(fn, { p_room: roomId, p_pin: pin, ...extra });
+      view = res; draw();
+      if (res.called) toast(`Called ${res.called}`);
+      else if (fn === 'host_call_next' && !res.called) toast('Nobody available to call right now.');
+    } catch (e) {
+      if (e.code === 'bad_pin' || e.code === 'locked') { store.del(pinKey); return askPin(e.message); }
+      toast(e.message);
+    }
+  };
+
+  const load = async (fromPin) => {
+    if (!pin) return askPin();
+    try {
+      view = await rpc('host_queue', { p_room: roomId, p_pin: pin });
+      if (fromPin) store.set(pinKey, pin);
+      draw();
+    } catch (e) {
+      if (e.code === 'bad_pin' || e.code === 'locked' || e.code === 'no_room') { store.del(pinKey); return askPin(e.message); }
+      toast(e.message);
+    }
+  };
+
+  const draw = () => {
+    const r = view.room;
+    const serving = view.entries.find(e => e.status === 'serving');
+    const waiting = view.entries.filter(e => e.status === 'waiting' || e.status === 'on_hold');
+    const skipped = view.entries.filter(e => e.status === 'skipped');
+    const anyCallable = waiting.some(e => e.status === 'waiting');
+
+    if (!app.querySelector('#host-main')) {
+      app.className = 'wrap wide';
+      app.innerHTML = `
+        <div class="top">
+          <div><h1 id="h-name"></h1><p class="muted" id="h-doc"></p></div>
+          <span id="h-pill"></span>
+        </div>
+        <div class="host-grid" id="host-main">
+          <div class="stack">
+            <section class="panel serving-card" id="h-serving" aria-live="polite"></section>
+            <section class="panel"><div class="stats" id="h-stats"></div></section>
+            <section class="panel stack" id="h-settings"></section>
+          </div>
+          <div class="stack">
+            <section class="panel"><h2 id="h-wtitle"></h2><ul class="qlist" id="h-wait" style="margin-top:.5rem"></ul></section>
+            <section class="panel" id="h-skipped"></section>
+          </div>
+        </div>`;
+    }
+    document.getElementById('h-name').textContent = r.name;
+    document.getElementById('h-doc').textContent = r.doctor_name || '';
+    document.getElementById('h-pill').innerHTML =
+      `<span class="status-pill ${r.status}">${{ open: 'Open', paused: 'On break', closed: 'Closed' }[r.status]}</span>`;
+
+    // Now serving + main actions
+    document.getElementById('h-serving').innerHTML = serving ? `
+      <p class="muted">Now serving</p>
+      <div class="no">${esc(serving.ticket)}</div>
+      <p class="who">${esc(serving.name)}</p>
+      ${serving.phone ? `<p><a href="tel:${esc(serving.phone)}">${esc(serving.phone)}</a></p>` : ''}
+      <p class="muted" style="margin-top:.35rem">Time with patient: <span class="timer" data-start="${esc(serving.called_at)}" data-est="${serving.est_minutes}"></span> of ${serving.est_minutes} min</p>
+      <div class="stack" style="margin-top:1rem">
+        <button class="btn primary big" data-act="next" ${anyCallable ? '' : 'disabled'}>Finish and call next</button>
+        <div class="row">
+          <button class="btn" data-act="complete">Finish</button>
+          <button class="btn" data-act="recall">Ring again</button>
+          <span class="spacer"></span>
+          <button class="btn danger" data-skip="${serving.id}" data-tk="${esc(serving.ticket)}">No-show</button>
+        </div>
+      </div>` : `
+      <p class="muted">Nobody is being served.</p>
+      <button class="btn primary big" style="margin-top:1rem" data-act="next" ${anyCallable ? '' : 'disabled'}>
+        ${anyCallable ? 'Call next' : (waiting.length ? 'Everyone waiting is in another room' : 'Nobody waiting')}</button>`;
+
+    document.getElementById('h-stats').innerHTML = `
+      <div><b>${view.done_today}</b><span class="muted small">Seen today</span></div>
+      <div><b>${waiting.length}</b><span class="muted small">Waiting</span></div>
+      <div><b>${view.avg_minutes ?? '—'}</b><span class="muted small">Avg minutes</span></div>`;
+
+    // Waiting list
+    document.getElementById('h-wtitle').textContent = waiting.length ? `Waiting (${waiting.length})` : 'Waiting';
+    document.getElementById('h-wait').innerHTML = waiting.length ? waiting.map((e, i) => `
+      <li class="qitem">
+        <span class="pos">${i + 1}</span>
+        <span class="tk">${esc(e.ticket)}</span>
+        <span class="nm">
+          <strong>${esc(e.name)}</strong>
+          <span class="small muted">
+            ${e.status === 'on_hold' ? `<span class="badge-hold">In ${esc(e.busy_in || 'another room')}</span>` : `Wait ${esc(fmtWait(e.est_wait))}`}
+            <button class="est-btn ${e.custom_est ? 'custom' : ''}" data-est="${e.id}" data-tk="${esc(e.ticket)}" data-min="${e.est_minutes}"
+              title="Change this patient’s estimated time">${e.est_minutes} min</button>
+          </span>
+        </span>
+        <span class="acts">
+          <button class="btn small" data-callone="${e.id}" ${e.status === 'on_hold' ? 'disabled' : ''}>Call now</button>
+          <button class="btn small danger" data-skip="${e.id}" data-tk="${esc(e.ticket)}">No-show</button>
+        </span>
+      </li>`).join('') : `<li class="muted" style="padding:.5rem 0">Nobody is waiting. Patients join by scanning this room’s QR code.</li>`;
+
+    // No-shows
+    document.getElementById('h-skipped').innerHTML = skipped.length ? `
+      <h3>No-shows (${skipped.length})</h3>
+      <ul class="qlist" style="margin-top:.5rem">${skipped.map(e => `
+        <li class="qitem" style="grid-template-columns:4.2rem 1fr auto">
+          <span class="tk">${esc(e.ticket)}</span><span class="nm"><strong>${esc(e.name)}</strong></span>
+          <span class="acts"><button class="btn small" data-restore="${e.id}">Put back in line</button></span>
+        </li>`).join('')}</ul>` : `<p class="muted small">No-shows will appear here so you can put them back in line.</p>`;
+
+    if (!settingsDrawn) drawSettings(r);
+    tick();
+  };
+
+  const drawSettings = r => {
+    settingsDrawn = true;
+    const el = document.getElementById('h-settings');
+    el.innerHTML = `
+      <h3>Room settings</h3>
+      <div><label>Status</label>
+        <div class="seg" role="group" id="s-status">
+          ${['open', 'paused', 'closed'].map(s => `<button type="button" data-s="${s}" aria-pressed="${r.status === s}">${{ open: 'Open', paused: 'On break', closed: 'Closed' }[s]}</button>`).join('')}
+        </div>
+        <p class="hint">On break: patients can still join. Closed: no new patients.</p></div>
+      <div><label for="s-msg">Message for patients</label>
+        <input id="s-msg" type="text" maxlength="120" placeholder="e.g. Back at 2:00 PM" value="${esc(r.status_message || '')}"></div>
+      <div><label for="s-est">Default minutes per patient</label>
+        <input id="s-est" type="number" min="1" max="240" value="${r.default_est_minutes}"></div>
+      <button class="btn" id="s-save">Save settings</button>
+      <p><button class="btn quiet" id="s-lock">Lock this device (forget PIN)</button></p>`;
+    let status = r.status;
+    el.querySelectorAll('[data-s]').forEach(b => b.addEventListener('click', () => {
+      status = b.dataset.s;
+      el.querySelectorAll('[data-s]').forEach(x => x.setAttribute('aria-pressed', x === b));
+    }));
+    document.getElementById('s-save').addEventListener('click', async () => {
+      await call('host_update_room', {
+        p_status: status, p_message: document.getElementById('s-msg').value,
+        p_default_est: parseInt(document.getElementById('s-est').value, 10) || 10,
+      });
+      toast('Settings saved.');
+    });
+    document.getElementById('s-lock').addEventListener('click', () => { store.del(pinKey); location.reload(); });
+  };
+
+  const tick = () => {
+    const t = app.querySelector('.timer');
+    if (!t || !t.dataset.start) return;
+    const sec = (Date.now() - new Date(t.dataset.start).getTime()) / 1000;
+    t.textContent = fmtClock(sec);
+    t.classList.toggle('over', sec > t.dataset.est * 60);
+  };
+  clearInterval(hostTick); hostTick = setInterval(tick, 1000);
+
+  // One click handler for all host buttons
+  app.addEventListener('click', async ev => {
+    const b = ev.target.closest('button'); if (!b || !view) return;
+    if (b.dataset.act === 'next') { b.disabled = true; await call('host_call_next'); }
+    else if (b.dataset.act === 'complete') await call('host_complete');
+    else if (b.dataset.act === 'recall') { await call('host_recall'); toast('Ringing the patient’s phone again.'); }
+    else if (b.dataset.callone) {
+      const cur = view.entries.find(e => e.status === 'serving');
+      if (cur && !confirm(`Finish ${cur.ticket} and call this patient now?`)) return;
+      await call('host_call_entry', { p_entry: b.dataset.callone });
+    }
+    else if (b.dataset.skip) { if (confirm(`Mark ${b.dataset.tk} as a no-show?`)) await call('host_skip', { p_entry: b.dataset.skip }); }
+    else if (b.dataset.restore) await call('host_restore', { p_entry: b.dataset.restore });
+    else if (b.dataset.est) {
+      const v = prompt(`Estimated minutes for ${b.dataset.tk}.\nLeave empty to use the room default (${view.room.default_est_minutes} min).`, b.dataset.min);
+      if (v === null) return;
+      const m = v.trim() === '' ? null : parseInt(v, 10);
+      if (m !== null && !(m >= 1 && m <= 240)) return toast(ERRORS.invalid_minutes);
+      await call('host_set_est', { p_entry: b.dataset.est, p_minutes: m });
+    }
+  });
+
+  await load(false);
+  onLive(() => { if (pin && view) load(false); });
+}
+
+// =================================================================
+//  Admin page: rooms, PINs, QR codes
+// =================================================================
+async function pageAdmin() {
+  let pw = sessionStorage.getItem('cq_admin');
+  let rooms = [], editing = undefined, showQr = null;
+
+  const login = msg => {
+    app.className = 'wrap';
+    app.innerHTML = `
+      <div class="top"><span class="clinic">${esc(CLINIC_NAME)}</span><span class="muted small">Admin</span></div>
+      <form id="lf" class="panel stack" novalidate>
+        <h1>Admin sign-in</h1>
+        ${msg ? `<div class="error">${esc(msg)}</div>` : ''}
+        <div><label for="pw">Admin password</label><input id="pw" type="password" autocomplete="current-password"></div>
+        <button class="btn primary big">Sign in</button>
+      </form>`;
+    document.getElementById('pw').focus();
+    document.getElementById('lf').addEventListener('submit', e => { e.preventDefault(); pw = document.getElementById('pw').value; load(); });
+  };
+
+  const load = async () => {
+    if (!pw) return login();
+    try {
+      rooms = (await rpc('admin_rooms', { p_password: pw })).rooms;
+      sessionStorage.setItem('cq_admin', pw);
+      draw();
+    } catch (e) { sessionStorage.removeItem('cq_admin'); pw = null; login(e.message); }
+  };
+
+  const joinUrl = r => `${BASE_URL}?room=${r.id}&t=${r.qr_token}`;
+  const hostUrl = r => `${BASE_URL}?host=${r.id}`;
+
+  const draw = () => {
+    app.className = 'wrap wide';
+    app.innerHTML = `
+      <div class="top"><div><span class="clinic">${esc(CLINIC_NAME)}</span><h1>Rooms</h1></div>
+        <button class="btn primary" id="add">Add a room</button></div>
+      <div id="editor"></div>
+      <div class="room-admin">
+        ${rooms.length ? rooms.map(r => `
+          <section class="panel stack" style="${r.archived ? 'opacity:.6' : ''}">
+            <div class="row">
+              <div><h2>${esc(r.name)}</h2>
+                <p class="muted small">Tickets ${esc(r.prefix)}001, ${esc(r.prefix)}002…  ${r.default_est_minutes} min per patient${r.doctor_name ? `. ${esc(r.doctor_name)}` : ''}${r.archived ? '. Hidden' : ''}</p></div>
+              <span class="spacer"></span>
+              <button class="btn small" data-edit="${r.id}">Edit</button>
+            </div>
+            ${showQr === r.id ? `
+              <div class="row" style="align-items:flex-start;gap:1rem">
+                <div class="qr-box" id="qr-${r.id}"></div>
+                <div class="stack" style="flex:1;min-width:12rem">
+                  <div><p class="small"><strong>Patient join link</strong> (in the QR code)</p><p class="linkline">${esc(joinUrl(r))}</p></div>
+                  <div><p class="small"><strong>Host page link</strong> (open on the room’s device)</p><p class="linkline"><a href="${esc(hostUrl(r))}" target="_blank" rel="noopener">${esc(hostUrl(r))}</a></p></div>
+                  <div class="row">
+                    <button class="btn small primary" data-print="${r.id}">Print QR poster</button>
+                    <button class="btn small" data-copy="${esc(hostUrl(r))}">Copy host link</button>
+                    <button class="btn small danger" data-newqr="${r.id}">Make a new QR code</button>
+                  </div>
+                </div>
+              </div>` : `<p><button class="btn small" data-qr="${r.id}">Show QR code and links</button></p>`}
+          </section>`).join('') : `<p class="muted">No rooms yet. Add your first room to get its QR code.</p>`}
+      </div>
+      <p style="margin-top:2rem"><button class="btn quiet" id="out">Sign out</button></p>`;
+
+    if (showQr) {
+      const r = rooms.find(x => x.id === showQr);
+      if (r) new QRCode(document.getElementById(`qr-${r.id}`), { text: joinUrl(r), width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
+    }
+    if (editing !== undefined) drawEditor();
+
+    document.getElementById('add').onclick = () => { editing = null; drawEditor(); };
+    document.getElementById('out').onclick = () => { sessionStorage.removeItem('cq_admin'); location.reload(); };
+    app.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => { editing = b.dataset.edit; drawEditor(); });
+    app.querySelectorAll('[data-qr]').forEach(b => b.onclick = () => { showQr = b.dataset.qr; draw(); });
+    app.querySelectorAll('[data-copy]').forEach(b => b.onclick = async () => {
+      try { await navigator.clipboard.writeText(b.dataset.copy); toast('Host link copied.'); } catch { prompt('Copy this link:', b.dataset.copy); }
+    });
+    app.querySelectorAll('[data-newqr]').forEach(b => b.onclick = async () => {
+      if (!confirm('Make a new QR code? Printed copies of the old QR code will stop working.')) return;
+      try { await rpc('admin_new_qr', { p_password: pw, p_id: b.dataset.newqr }); await load(); toast('New QR code made. Print it again.'); } catch (e) { toast(e.message); }
+    });
+    app.querySelectorAll('[data-print]').forEach(b => b.onclick = () => {
+      const r = rooms.find(x => x.id === b.dataset.print);
+      const pa = document.getElementById('print-area');
+      pa.innerHTML = `<h1>${esc(r.name)}</h1><p>Scan to join the queue</p><div class="qr-box" id="pqr" style="display:inline-block"></div><p style="font-size:12pt;margin-top:1cm">${esc(CLINIC_NAME)}</p>`;
+      new QRCode(document.getElementById('pqr'), { text: joinUrl(r), width: 420, height: 420, correctLevel: QRCode.CorrectLevel.M });
+      setTimeout(() => window.print(), 300);
+    });
+  };
+
+  const drawEditor = () => {
+    const r = editing ? rooms.find(x => x.id === editing) : null;
+    const el = document.getElementById('editor');
+    el.innerHTML = `
+      <form class="panel" id="ef" style="margin-bottom:1rem" novalidate>
+        <h2 style="margin-bottom:1rem">${r ? `Edit ${esc(r.name)}` : 'Add a room'}</h2>
+        <div class="form-grid">
+          <div class="full"><label for="e-name">Room name</label><input id="e-name" type="text" maxlength="60" value="${esc(r?.name || '')}" placeholder="e.g. Consultation 1"></div>
+          <div><label for="e-prefix">Ticket letter</label><input id="e-prefix" type="text" maxlength="3" value="${esc(r?.prefix || '')}" placeholder="A"><p class="hint">Tickets look like A001.</p></div>
+          <div><label for="e-est">Minutes per patient</label><input id="e-est" type="number" min="1" max="240" value="${r?.default_est_minutes ?? 10}"></div>
+          <div class="full"><label for="e-doc">Doctor or service <span class="muted small">(optional)</span></label><input id="e-doc" type="text" maxlength="60" value="${esc(r?.doctor_name || '')}"></div>
+          <div><label for="e-pin">${r ? 'New host PIN' : 'Host PIN'}</label><input id="e-pin" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password"><p class="hint">${r ? 'Leave empty to keep the current PIN.' : '4 to 8 digits.'}</p></div>
+          <div><label for="e-sort">Order in lists</label><input id="e-sort" type="number" value="${r?.sort_order ?? rooms.length + 1}"></div>
+          ${r ? `<div class="full"><label><input type="checkbox" id="e-arch" ${r.archived ? 'checked' : ''}> Hide this room (its QR code stops working)</label></div>` : ''}
+        </div>
+        <div id="e-err" class="error" hidden style="margin-top:1rem"></div>
+        <div class="row" style="margin-top:1rem">
+          <button class="btn primary">${r ? 'Save changes' : 'Add room'}</button>
+          <button type="button" class="btn" id="e-cancel">Cancel</button>
+        </div>
+      </form>`;
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.getElementById('e-name').focus();
+    document.getElementById('e-cancel').onclick = () => { editing = undefined; el.innerHTML = ''; };
+    document.getElementById('ef').onsubmit = async ev => {
+      ev.preventDefault();
+      const v = id => document.getElementById(id).value.trim();
+      try {
+        const res = await rpc('admin_save_room', {
+          p_password: pw, p_id: r?.id ?? null, p_name: v('e-name'), p_prefix: v('e-prefix'), p_doctor: v('e-doc'),
+          p_default_est: parseInt(v('e-est'), 10), p_sort: parseInt(v('e-sort'), 10) || 0,
+          p_pin: v('e-pin') || null, p_archived: document.getElementById('e-arch')?.checked ?? false,
+        });
+        editing = undefined; showQr = res.id;
+        await load(); toast(r ? 'Room saved.' : 'Room added. Print its QR code below.');
+      } catch (e) { const er = document.getElementById('e-err'); er.textContent = e.message; er.hidden = false; }
+    };
+  };
+
+  await load();
+}
+
+// =================================================================
+//  Start
+// =================================================================
+if (!configured) {
+  app.innerHTML = `<h1>Almost ready</h1>
+    <p style="margin-top:.75rem">Open <code>index.html</code> and fill in <code>SUPABASE_URL</code> and <code>SUPABASE_KEY</code> at the top. See the README for the steps.</p>`;
+} else if (params.has('admin')) pageAdmin();
+else if (params.get('host')) pageHost();
+else if (params.get('room')) pageJoin();
+else pageMyQueues();
+</script>
+</body>
+</html>
